@@ -32,56 +32,93 @@ for cmd in curl file; do
     fi
 done
 
-# Download Warp AppImage
-echo -e "${YELLOW}Downloading Warp Terminal...${NC}"
-TMP_APPIMAGE=$(mktemp)
-if curl -L -o "$TMP_APPIMAGE" "$WARP_URL"; then
-    echo -e "${GREEN}✓ Download complete${NC}"
+# Check if Warp is already installed
+if [[ -f "$APPIMAGE_PATH" ]]; then
+    echo -e "${YELLOW}Warp is already installed at ${APPIMAGE_PATH}${NC}"
+    echo -e "${YELLOW}Checking for updates...${NC}"
+    
+    # Download new version to compare
+    TMP_APPIMAGE=$(mktemp)
+    if curl -L -o "$TMP_APPIMAGE" "$WARP_URL"; then
+        # Compare file sizes as a simple update check
+        OLD_SIZE=$(stat -c%s "$APPIMAGE_PATH" 2>/dev/null || stat -f%z "$APPIMAGE_PATH" 2>/dev/null)
+        NEW_SIZE=$(stat -c%s "$TMP_APPIMAGE" 2>/dev/null || stat -f%z "$TMP_APPIMAGE" 2>/dev/null)
+        
+        if [[ "$OLD_SIZE" == "$NEW_SIZE" ]]; then
+            echo -e "${GREEN}✓ Warp is up to date${NC}"
+            rm -f "$TMP_APPIMAGE"
+        else
+            echo -e "${YELLOW}Update available, installing...${NC}"
+            if [[ -w "$INSTALL_DIR" ]]; then
+                mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+                chmod +x "$APPIMAGE_PATH"
+            else
+                sudo mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+                sudo chmod +x "$APPIMAGE_PATH"
+            fi
+            echo -e "${GREEN}✓ Updated to latest version${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠ Could not check for updates, keeping existing installation${NC}"
+        rm -f "$TMP_APPIMAGE"
+    fi
 else
-    echo -e "${RED}✗ Failed to download Warp${NC}"
-    rm -f "$TMP_APPIMAGE"
-    exit 1
+    # Download Warp AppImage
+    echo -e "${YELLOW}Downloading Warp Terminal...${NC}"
+    TMP_APPIMAGE=$(mktemp)
+    if curl -L -o "$TMP_APPIMAGE" "$WARP_URL"; then
+        echo -e "${GREEN}✓ Download complete${NC}"
+    else
+        echo -e "${RED}✗ Failed to download Warp${NC}"
+        rm -f "$TMP_APPIMAGE"
+        exit 1
+    fi
+    
+    # Move to install directory (requires sudo if /opt)
+    echo -e "${YELLOW}Installing to ${APPIMAGE_PATH}...${NC}"
+    if [[ -w "$INSTALL_DIR" ]]; then
+        mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+        chmod +x "$APPIMAGE_PATH"
+    else
+        sudo mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+        sudo chmod +x "$APPIMAGE_PATH"
+    fi
+    echo -e "${GREEN}✓ Installed to ${APPIMAGE_PATH}${NC}"
 fi
 
-# Move to install directory (requires sudo if /opt)
-echo -e "${YELLOW}Installing to ${APPIMAGE_PATH}...${NC}"
-if [[ -w "$INSTALL_DIR" ]]; then
-    mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
-    chmod +x "$APPIMAGE_PATH"
+# Extract icon from AppImage (only if not already present)
+if [[ ! -f "$ICON_PATH" ]]; then
+    echo -e "${YELLOW}Extracting icon...${NC}"
+    TMP_DIR=$(mktemp -d)
+    cd "$TMP_DIR"
+    "$APPIMAGE_PATH" --appimage-extract >/dev/null 2>&1
+    
+    # Find the highest resolution icon
+    ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | grep "256x256" | head -1)
+    if [[ -z "$ICON_FILE" ]]; then
+        ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | head -1)
+    fi
+    
+    if [[ -n "$ICON_FILE" ]]; then
+        mkdir -p "$ICON_DIR"
+        cp "$ICON_FILE" "$ICON_PATH"
+        echo -e "${GREEN}✓ Icon extracted to ${ICON_PATH}${NC}"
+    else
+        echo -e "${YELLOW}⚠ Warning: Could not find icon in AppImage${NC}"
+    fi
+    
+    # Clean up extraction
+    cd - >/dev/null
+    rm -rf "$TMP_DIR"
 else
-    sudo mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
-    sudo chmod +x "$APPIMAGE_PATH"
-fi
-echo -e "${GREEN}✓ Installed to ${APPIMAGE_PATH}${NC}"
-
-# Extract icon from AppImage
-echo -e "${YELLOW}Extracting icon...${NC}"
-TMP_DIR=$(mktemp -d)
-cd "$TMP_DIR"
-"$APPIMAGE_PATH" --appimage-extract >/dev/null 2>&1
-
-# Find the highest resolution icon
-ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | grep "256x256" | head -1)
-if [[ -z "$ICON_FILE" ]]; then
-    ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | head -1)
+    echo -e "${GREEN}✓ Icon already exists at ${ICON_PATH}${NC}"
 fi
 
-if [[ -n "$ICON_FILE" ]]; then
-    mkdir -p "$ICON_DIR"
-    cp "$ICON_FILE" "$ICON_PATH"
-    echo -e "${GREEN}✓ Icon extracted to ${ICON_PATH}${NC}"
-else
-    echo -e "${YELLOW}⚠ Warning: Could not find icon in AppImage${NC}"
-fi
-
-# Clean up extraction
-cd - >/dev/null
-rm -rf "$TMP_DIR"
-
-# Create desktop entry
-echo -e "${YELLOW}Creating desktop entry...${NC}"
-mkdir -p "$(dirname "$DESKTOP_ENTRY")"
-cat > "$DESKTOP_ENTRY" << EOF
+# Create desktop entry (only if not already present or needs update)
+if [[ ! -f "$DESKTOP_ENTRY" ]] || ! grep -q "Exec=${APPIMAGE_PATH}" "$DESKTOP_ENTRY" 2>/dev/null; then
+    echo -e "${YELLOW}Creating desktop entry...${NC}"
+    mkdir -p "$(dirname "$DESKTOP_ENTRY")"
+    cat > "$DESKTOP_ENTRY" << EOF
 [Desktop Entry]
 Name=Warp
 Exec=${APPIMAGE_PATH}
@@ -91,8 +128,10 @@ Categories=Development;System;TerminalEmulator;
 Terminal=false
 Comment=Warp Terminal - The terminal for the 21st century
 EOF
-
-echo -e "${GREEN}✓ Desktop entry created at ${DESKTOP_ENTRY}${NC}"
+    echo -e "${GREEN}✓ Desktop entry created at ${DESKTOP_ENTRY}${NC}"
+else
+    echo -e "${GREEN}✓ Desktop entry already exists at ${DESKTOP_ENTRY}${NC}"
+fi
 
 # Update desktop database
 if command -v update-desktop-database &> /dev/null; then
