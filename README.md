@@ -12,6 +12,12 @@ Scripts for configuring [Hyprland](https://hyprland.org/) and [Omarchy](https://
 
 See [hyprland/README.md](hyprland/README.md) for details.
 
+### 🖥️ [hyprmon/](hyprmon/)
+
+Scripts for installing and managing [hyprmon](https://github.com/erans/hyprmon), a multi-monitor profile manager for Hyprland.
+
+See [hyprmon/README.md](hyprmon/README.md) for details.
+
 ### 📊 [waybar/](waybar/)
 
 Scripts for configuring [Waybar](https://github.com/Alexays/Waybar) status bar.
