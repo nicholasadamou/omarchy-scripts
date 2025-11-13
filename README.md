@@ -1,5 +1,7 @@
 # 🛠️ Omarchy Scripts
 
+[![ShellCheck](https://github.com/nicholasadamou/omarchy-scripts/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/nicholasadamou/omarchy-scripts/actions/workflows/shellcheck.yml)
+
 A collection of utility scripts for system setup and automation.
 
 ## 📦 Scripts
