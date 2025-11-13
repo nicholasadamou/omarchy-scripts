@@ -4,47 +4,35 @@ A collection of utility scripts for system setup and automation.
 
 ## Scripts
 
-### warp/
+### [hyprland/](hyprland/)
+
+Scripts for configuring [Hyprland](https://hyprland.org/) and [Omarchy](https://github.com/OmarCastro/omarchy).
+
+See [hyprland/README.md](hyprland/README.md) for details.
+
+### [waybar/](waybar/)
+
+Scripts for configuring [Waybar](https://github.com/Alexays/Waybar) status bar.
+
+See [waybar/README.md](waybar/README.md) for details.
+
+### [snapd/](snapd/)
+
+Scripts for installing and managing [snapd](https://snapcraft.io/) on Arch Linux.
+
+See [snapd/README.md](snapd/README.md) for details.
+
+### [raindrop/](raindrop/)
+
+Scripts for installing and managing [Raindrop.io](https://raindrop.io), an all-in-one bookmark manager.
+
+See [raindrop/README.md](raindrop/README.md) for details.
+
+### [warp/](warp/)
 
 Scripts for managing [Warp Terminal](https://www.warp.dev/) on Linux systems.
 
-#### install.sh
-
-Automates the installation of Warp Terminal.
-
-**Features:**
-- Downloads the latest Warp AppImage
-- Installs to `/opt/warp.appimage`
-- Extracts and configures the application icon
-- Creates a desktop entry for easy launching
-- Checks for updates on subsequent runs
-- Updates the desktop database
-
-**Usage:**
-```bash
-./warp/install.sh
-```
-
-#### uninstall.sh
-
-Removes Warp Terminal from your system.
-
-**Features:**
-- Removes the AppImage from `/opt`
-- Removes the desktop entry
-- Removes the application icon
-- Updates the desktop database
-- Idempotent (safe to run multiple times)
-
-**Usage:**
-```bash
-./warp/uninstall.sh
-```
-
-**Requirements:**
-- Linux operating system
-- `curl` for downloading (install only)
-- `sudo` access (for installing/removing from `/opt`)
+See [warp/README.md](warp/README.md) for details.
 
 ## Development
 
