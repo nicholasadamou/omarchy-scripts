@@ -70,4 +70,4 @@ The workflow configuration is in `.github/workflows/shellcheck.yml`.
 
 ## 📄 License
 
-MIT
+[MIT](LICENSE)
