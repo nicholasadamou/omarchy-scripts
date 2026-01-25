@@ -33,7 +33,29 @@ for cmd in curl file; do
 done
 
 # Check if Warp is already installed
-if [[ -f "$APPIMAGE_PATH" ]]; then
+if [[ ! -f "$APPIMAGE_PATH" ]]; then
+    # Download Warp AppImage
+    echo -e "${YELLOW}Downloading Warp Terminal...${NC}"
+    TMP_APPIMAGE=$(mktemp)
+    if curl -L -o "$TMP_APPIMAGE" "$WARP_URL"; then
+        echo -e "${GREEN}✓ Download complete${NC}"
+    else
+        echo -e "${RED}✗ Failed to download Warp${NC}"
+        rm -f "$TMP_APPIMAGE"
+        exit 1
+    fi
+    
+    # Move to install directory (requires sudo if /opt)
+    echo -e "${YELLOW}Installing to ${APPIMAGE_PATH}...${NC}"
+    if [[ -w "$INSTALL_DIR" ]]; then
+        mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+        chmod +x "$APPIMAGE_PATH"
+    else
+        sudo mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
+        sudo chmod +x "$APPIMAGE_PATH"
+    fi
+    echo -e "${GREEN}✓ Installed to ${APPIMAGE_PATH}${NC}"
+else
     echo -e "${YELLOW}Warp is already installed at ${APPIMAGE_PATH}${NC}"
     echo -e "${YELLOW}Checking for updates...${NC}"
     
@@ -62,28 +84,6 @@ if [[ -f "$APPIMAGE_PATH" ]]; then
         echo -e "${YELLOW}⚠ Could not check for updates, keeping existing installation${NC}"
         rm -f "$TMP_APPIMAGE"
     fi
-else
-    # Download Warp AppImage
-    echo -e "${YELLOW}Downloading Warp Terminal...${NC}"
-    TMP_APPIMAGE=$(mktemp)
-    if curl -L -o "$TMP_APPIMAGE" "$WARP_URL"; then
-        echo -e "${GREEN}✓ Download complete${NC}"
-    else
-        echo -e "${RED}✗ Failed to download Warp${NC}"
-        rm -f "$TMP_APPIMAGE"
-        exit 1
-    fi
-    
-    # Move to install directory (requires sudo if /opt)
-    echo -e "${YELLOW}Installing to ${APPIMAGE_PATH}...${NC}"
-    if [[ -w "$INSTALL_DIR" ]]; then
-        mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
-        chmod +x "$APPIMAGE_PATH"
-    else
-        sudo mv "$TMP_APPIMAGE" "$APPIMAGE_PATH"
-        sudo chmod +x "$APPIMAGE_PATH"
-    fi
-    echo -e "${GREEN}✓ Installed to ${APPIMAGE_PATH}${NC}"
 fi
 
 # Extract icon from AppImage (only if not already present)
@@ -95,9 +95,7 @@ if [[ ! -f "$ICON_PATH" ]]; then
     
     # Find the highest resolution icon
     ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | grep "256x256" | head -1)
-    if [[ -z "$ICON_FILE" ]]; then
-        ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | head -1)
-    fi
+    [[ -z "$ICON_FILE" ]] && ICON_FILE=$(find squashfs-root -name "*.png" | grep -i "warp" | head -1)
     
     if [[ -n "$ICON_FILE" ]]; then
         mkdir -p "$ICON_DIR"

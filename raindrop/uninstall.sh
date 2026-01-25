@@ -38,19 +38,19 @@ echo -e "\n${YELLOW}Do you want to remove snapd completely? (y/N)${NC}"
 read -r REMOVE_SNAPD
 
 if [[ "$REMOVE_SNAPD" =~ ^[Yy]$ ]]; then
-    if [[ -f "$PROJECT_ROOT/snapd/uninstall.sh" ]]; then
-        echo -e "${YELLOW}Running snapd uninstallation script...${NC}\n"
-        if bash "$PROJECT_ROOT/snapd/uninstall.sh"; then
-            echo -e "\n${GREEN}✓ snapd uninstallation complete${NC}"
-        else
-            echo -e "${RED}✗ snapd uninstallation failed${NC}"
-            exit 1
-        fi
-    else
+    if [[ ! -f "$PROJECT_ROOT/snapd/uninstall.sh" ]]; then
         echo -e "${RED}Error: snapd/uninstall.sh not found at $PROJECT_ROOT/snapd/uninstall.sh${NC}"
         echo -e "${RED}Please remove snapd manually if needed.${NC}"
         exit 1
     fi
+    
+    echo -e "${YELLOW}Running snapd uninstallation script...${NC}\n"
+    if ! bash "$PROJECT_ROOT/snapd/uninstall.sh"; then
+        echo -e "${RED}✗ snapd uninstallation failed${NC}"
+        exit 1
+    fi
+    
+    echo -e "\n${GREEN}✓ snapd uninstallation complete${NC}"
 else
     echo -e "${YELLOW}Keeping snapd installed${NC}"
 fi

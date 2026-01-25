@@ -26,22 +26,21 @@ if [ "$SNAP_COUNT" -gt 0 ]; then
     echo -e "${YELLOW}Remove all snaps now? (y/N)${NC}"
     read -r REMOVE_ALL
     
-    if [[ "$REMOVE_ALL" =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Removing all snaps...${NC}"
-        while IFS= read -r snap_name; do
-            echo -e "${YELLOW}Removing $snap_name...${NC}"
-            if sudo snap remove "$snap_name"; then
-                echo -e "${GREEN}✓ Removed $snap_name${NC}"
-            else
-                echo -e "${RED}✗ Failed to remove $snap_name${NC}"
-                echo -e "${RED}Please remove snaps manually before uninstalling snapd${NC}"
-                exit 1
-            fi
-        done < <(snap list | tail -n +2 | awk '{print $1}')
-    else
+    if [[ ! "$REMOVE_ALL" =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Aborted. Please remove snaps manually and run this script again.${NC}"
         exit 0
     fi
+    
+    echo -e "${YELLOW}Removing all snaps...${NC}"
+    while IFS= read -r snap_name; do
+        echo -e "${YELLOW}Removing $snap_name...${NC}"
+        if ! sudo snap remove "$snap_name"; then
+            echo -e "${RED}✗ Failed to remove $snap_name${NC}"
+            echo -e "${RED}Please remove snaps manually before uninstalling snapd${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✓ Removed $snap_name${NC}"
+    done < <(snap list | tail -n +2 | awk '{print $1}')
 fi
 
 # Disable and stop snapd services
@@ -65,15 +64,12 @@ fi
 echo -e "${YELLOW}Removing snapd package...${NC}"
 if sudo pacman -Rns snapd --noconfirm; then
     echo -e "${GREEN}✓ snapd package removed successfully${NC}"
+elif sudo pacman -Rn snapd --noconfirm; then
+    echo -e "${GREEN}✓ snapd package removed${NC}"
 else
-    echo -e "${YELLOW}⚠ Could not remove snapd package (attempting with -Rn)${NC}"
-    if sudo pacman -Rn snapd --noconfirm; then
-        echo -e "${GREEN}✓ snapd package removed${NC}"
-    else
-        echo -e "${RED}✗ Failed to remove snapd package${NC}"
-        echo -e "${RED}You may need to remove it manually with: sudo pacman -R snapd${NC}"
-        exit 1
-    fi
+    echo -e "${RED}✗ Failed to remove snapd package${NC}"
+    echo -e "${RED}You may need to remove it manually with: sudo pacman -R snapd${NC}"
+    exit 1
 fi
 
 # Ask about removing snap directories
@@ -90,17 +86,15 @@ if [[ "$REMOVE_DATA" =~ ^[Yy]$ ]]; then
     )
     
     for dir in "${dirs_to_remove[@]}"; do
-        if [[ -d "$dir" ]]; then
-            if [[ "$dir" == "$HOME/snap" ]]; then
-                rm -rf "$dir"
-                echo -e "${GREEN}✓ Removed $dir${NC}"
-            else
-                if sudo rm -rf "$dir"; then
-                    echo -e "${GREEN}✓ Removed $dir${NC}"
-                else
-                    echo -e "${YELLOW}⚠ Could not remove $dir${NC}"
-                fi
-            fi
+        [[ ! -d "$dir" ]] && continue
+        
+        if [[ "$dir" == "$HOME/snap" ]]; then
+            rm -rf "$dir"
+            echo -e "${GREEN}✓ Removed $dir${NC}"
+        elif sudo rm -rf "$dir"; then
+            echo -e "${GREEN}✓ Removed $dir${NC}"
+        else
+            echo -e "${YELLOW}⚠ Could not remove $dir${NC}"
         fi
     done
     

@@ -26,41 +26,31 @@ echo -e "${YELLOW}Configuring waybar to use 12-hour time format...${NC}"
 cp "$WAYBAR_CONFIG" "${WAYBAR_CONFIG}${BACKUP_SUFFIX}"
 echo -e "${GREEN}✓ Created backup at ${WAYBAR_CONFIG}${BACKUP_SUFFIX}${NC}"
 
-# Check current format
-if grep -q '"%H:%M"' "$WAYBAR_CONFIG" || grep -q '"%H:%M:%S"' "$WAYBAR_CONFIG"; then
+# Check current format and convert if needed
+if grep -q '"%I:%M' "$WAYBAR_CONFIG" || grep -q '{:%I:%M' "$WAYBAR_CONFIG" || grep -q '{:L%I:%M' "$WAYBAR_CONFIG"; then
+    echo -e "${GREEN}✓ Already using 12-hour format${NC}"
+elif grep -q '"%H:%M"' "$WAYBAR_CONFIG" || grep -q '"%H:%M:%S"' "$WAYBAR_CONFIG"; then
     echo -e "${YELLOW}Found 24-hour format, converting to 12-hour...${NC}"
     
     # Replace 24-hour format with 12-hour format
-    # %H:%M:%S -> %I:%M:%S %p (with seconds)
-    # %H:%M -> %I:%M %p (without seconds)
     sed -i 's/"%H:%M:%S"/"%I:%M:%S %p"/g' "$WAYBAR_CONFIG"
     sed -i 's/"%H:%M"/"%I:%M %p"/g' "$WAYBAR_CONFIG"
-    
-    # Also handle formats with day/date
     sed -i 's/{:%H:%M}/{:%I:%M %p}/g' "$WAYBAR_CONFIG"
     sed -i 's/{:L%H:%M}/{:L%I:%M %p}/g' "$WAYBAR_CONFIG"
     sed -i 's/{:%A %H:%M}/{:%A %I:%M %p}/g' "$WAYBAR_CONFIG"
     sed -i 's/{:L%A %H:%M}/{:L%A %I:%M %p}/g' "$WAYBAR_CONFIG"
     
     echo -e "${GREEN}✓ Converted to 12-hour format${NC}"
-elif grep -q '"%I:%M' "$WAYBAR_CONFIG" || grep -q '{:%I:%M' "$WAYBAR_CONFIG" || grep -q '{:L%I:%M' "$WAYBAR_CONFIG"; then
-    echo -e "${GREEN}✓ Already using 12-hour format${NC}"
+elif ! grep -q '"clock"' "$WAYBAR_CONFIG"; then
+    echo -e "${RED}✗ Could not find clock configuration${NC}"
+    mv "${WAYBAR_CONFIG}${BACKUP_SUFFIX}" "$WAYBAR_CONFIG"
+    exit 1
 else
     echo -e "${YELLOW}⚠ Could not detect time format, manually updating...${NC}"
-    
-    # Try to update the clock format line
-    if grep -q '"clock"' "$WAYBAR_CONFIG"; then
-        # Find and replace the format line in the clock section
-        sed -i '/"clock"/,/"format"/ {
-            s/"format": *"[^"]*"/"format": "{:L%A %I:%M %p}"/
-        }' "$WAYBAR_CONFIG"
-        echo -e "${GREEN}✓ Set to 12-hour format${NC}"
-    else
-        echo -e "${RED}✗ Could not find clock configuration${NC}"
-        # Restore backup
-        mv "${WAYBAR_CONFIG}${BACKUP_SUFFIX}" "$WAYBAR_CONFIG"
-        exit 1
-    fi
+    sed -i '/"clock"/,/"format"/ {
+        s/"format": *"[^"]*"/"format": "{:L%A %I:%M %p}"/
+    }' "$WAYBAR_CONFIG"
+    echo -e "${GREEN}✓ Set to 12-hour format${NC}"
 fi
 
 # Reload waybar if it's running

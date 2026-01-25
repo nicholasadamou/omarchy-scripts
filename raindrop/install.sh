@@ -21,23 +21,23 @@ if [[ ! -f /etc/arch-release ]]; then
 fi
 
 # Check if snapd is installed, if not run the snapd install script
-if ! command -v snap &> /dev/null; then
+if command -v snap &> /dev/null; then
+    echo -e "${GREEN}✓ snapd is already installed${NC}"
+else
     echo -e "${YELLOW}snapd is not installed. Running snapd installation script...${NC}\n"
     
-    if [[ -f "$PROJECT_ROOT/snapd/install.sh" ]]; then
-        if bash "$PROJECT_ROOT/snapd/install.sh"; then
-            echo -e "\n${GREEN}✓ snapd installation complete${NC}\n"
-        else
-            echo -e "${RED}✗ snapd installation failed${NC}"
-            exit 1
-        fi
-    else
+    if [[ ! -f "$PROJECT_ROOT/snapd/install.sh" ]]; then
         echo -e "${RED}Error: snapd/install.sh not found at $PROJECT_ROOT/snapd/install.sh${NC}"
         echo -e "${RED}Please ensure the snapd install script exists or install snapd manually.${NC}"
         exit 1
     fi
-else
-    echo -e "${GREEN}✓ snapd is already installed${NC}"
+    
+    if ! bash "$PROJECT_ROOT/snapd/install.sh"; then
+        echo -e "${RED}✗ snapd installation failed${NC}"
+        exit 1
+    fi
+    
+    echo -e "\n${GREEN}✓ snapd installation complete${NC}\n"
 fi
 
 # Check if Raindrop is already installed
@@ -63,10 +63,10 @@ USER_DESKTOP_FILE="${HOME}/.local/share/applications/raindrop.desktop"
 if [[ -f "$SNAP_DESKTOP_FILE" ]]; then
     echo -e "\n${YELLOW}Creating desktop file symlink...${NC}"
     mkdir -p "${HOME}/.local/share/applications"
+    
     if ln -sf "$SNAP_DESKTOP_FILE" "$USER_DESKTOP_FILE"; then
         echo -e "${GREEN}✓ Desktop file symlink created${NC}"
         
-        # Update desktop database
         if command -v update-desktop-database &> /dev/null; then
             update-desktop-database "${HOME}/.local/share/applications/" 2>/dev/null || true
             echo -e "${GREEN}✓ Desktop database updated${NC}"

@@ -20,15 +20,12 @@ echo -e "${YELLOW}Removing hyprmon...${NC}"
 
 if sudo pacman -Rns hyprmon-bin --noconfirm; then
     echo -e "${GREEN}✓ hyprmon removed successfully${NC}"
+elif sudo pacman -Rn hyprmon-bin --noconfirm; then
+    echo -e "${GREEN}✓ hyprmon removed${NC}"
 else
-    echo -e "${YELLOW}⚠ Could not remove hyprmon package (attempting with -Rn)${NC}"
-    if sudo pacman -Rn hyprmon-bin --noconfirm; then
-        echo -e "${GREEN}✓ hyprmon removed${NC}"
-    else
-        echo -e "${RED}✗ Failed to remove hyprmon package${NC}"
-        echo -e "${RED}You may need to remove it manually with: sudo pacman -R hyprmon-bin${NC}"
-        exit 1
-    fi
+    echo -e "${RED}✗ Failed to remove hyprmon package${NC}"
+    echo -e "${RED}You may need to remove it manually with: sudo pacman -R hyprmon-bin${NC}"
+    exit 1
 fi
 
 # Check for config files

@@ -70,15 +70,15 @@ else
 fi
 
 # Check if AppArmor is enabled
-if systemctl is-active --quiet apparmor 2>/dev/null; then
+if ! systemctl is-active --quiet apparmor 2>/dev/null; then
+    echo -e "${GREEN}✓ AppArmor not detected, skipping snapd.apparmor.service${NC}"
+else
     echo -e "${YELLOW}AppArmor detected, enabling snapd.apparmor.service...${NC}"
     if sudo systemctl enable --now snapd.apparmor.service; then
         echo -e "${GREEN}✓ snapd.apparmor.service enabled${NC}"
     else
         echo -e "${YELLOW}⚠ Could not enable snapd.apparmor.service${NC}"
     fi
-else
-    echo -e "${GREEN}✓ AppArmor not detected, skipping snapd.apparmor.service${NC}"
 fi
 
 # Enable classic snap support

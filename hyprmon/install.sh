@@ -30,10 +30,7 @@ if ! command -v hyprctl &> /dev/null; then
     echo -e "${YELLOW}hyprmon requires Hyprland to function.${NC}"
     echo -e "\n${YELLOW}Continue anyway? (y/N)${NC}"
     read -r CONTINUE
-    if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Installation cancelled.${NC}"
-        exit 0
-    fi
+    [[ ! "$CONTINUE" =~ ^[Yy]$ ]] && echo -e "${YELLOW}Installation cancelled.${NC}" && exit 0
 fi
 
 # Check if hyprmon is already installed
@@ -44,10 +41,7 @@ if pacman -Qi hyprmon-bin &> /dev/null; then
     
     echo -e "\n${YELLOW}Reinstall/update hyprmon? (y/N)${NC}"
     read -r REINSTALL
-    if [[ ! "$REINSTALL" =~ ^[Yy]$ ]]; then
-        echo -e "${GREEN}Keeping current installation.${NC}"
-        exit 0
-    fi
+    [[ ! "$REINSTALL" =~ ^[Yy]$ ]] && echo -e "${GREEN}Keeping current installation.${NC}" && exit 0
 fi
 
 echo -e "${YELLOW}Installing hyprmon from AUR...${NC}"
